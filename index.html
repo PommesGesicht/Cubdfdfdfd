@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cube Run</title>
+    <!-- KORREKTUR: Phaser JS Bibliothek richtig einbinden -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+    
+    <style>
+
+
+        body {
+            background: blue;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            } 
+
+        canvas {
+        display: block; 
+        }
+
+        .startScren {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 320px;
+            z-index: 1;
+        }
+
+        .gameContainer {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            align-items: center;
+            z-index: 2;
+            transition: opacity 0.2s ease;
+        }
+
+        .gameContainer.aktiv {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .startGamme, .settingButton, .deathHomeButton, .finishHomeButton {
+            background: linear-gradient(to bottom, #ec5be5, #e02ed1);
+            color: rgb(255, 255, 255);
+            padding: 15px 0;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 0 15px 5px #ec5be5;
+            border: 5px solid #ffffff;
+            font-weight: bold;
+            font-size: 26px;
+            width: 320px;
+            text-align: center;
+            box-sizing: border-box;
+            transition: transform 0.1s ease;
+            margin-bottom: 10px;
+        }
+
+        .startGamme:hover, .settingButton:hover, .restartButton:hover, .deathHomeButton:hover, .finishHomeButton:hover  {
+            transform: scale(1.05);
+        }
+
+        .optionsStart {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-direction: column;
+            width: 320px;
+        }
+
+        .BackButton {
+            background-color: #ec5be5;
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            padding: 8px 15px;
+            border: 3px solid white;
+            border-radius: 7px;
+            box-shadow: 0 0 15px 5px white;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        #coinCountContainer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: bold;
+            font-size: 24px;
+            color: #FFDE59;
+            text-shadow: 
+                1px 1px 0px #FF914D,
+                2px 2px 0px #FF914D,
+                3px 3px 0px #FF914D,
+                4px 4px 0px #FF914D,
+                5px 5px 0px #FF914D;
+        }
+
+        .color-cube-text {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 6rem;
+            text-transform: uppercase;
+            color: #FFDE59;
+            padding: 0;
+            margin: 0 0 30px 0;
+            text-shadow: 
+                1px 1px 0px #FF914D,
+                2px 2px 0px #FF914D,
+                3px 3px 0px #FF914D,
+                4px 4px 0px #FF914D,
+                5px 5px 0px #FF914D;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .settinContainer {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 255, 0.9);
+            z-index: 8;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .skinContainer {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 8;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            background: transparent;
+        }
+
+        .settings-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid white;
+        
+        }
+
+        .skins-content {
+    display: flex;
+    flex-direction: row; /* NEU: Ordnet die Buttons nebeneinander an */
+    justify-content: center; /* Zentriert die Buttons horizontal */
+    align-items: center;
+    gap: 20px; /* Abstand zwischen den Buttons */
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 20px; /* Falls gewünscht, kannst du hier auch einen Rahmen hinzufügen */
+    border: 3px solid white;
+}
+
+        .settings-content label {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .settings-content input[type="range"] {
+            width: 250px;
+            cursor: pointer;
+        }
+
+        .gameOverScreen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 4rem;
+            text-transform: uppercase;
+            color: #FFDE59;
+            padding: 0;
+            margin: 0 0 30px 0;
+            text-shadow: 
+                1px 1px 0px #FF914D,
+                2px 2px 0px #FF914D,
+                3px 3px 0px #FF914D,
+                4px 4px 0px #FF914D,
+                5px 5px 0px #FF914D;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .restartButton {
+            background: linear-gradient(to bottom, #ec5be5, #e02ed1);
+            color: rgb(255, 255, 255);
+            padding: 15px 0;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 0 15px 5px #ec5be5;
+            border: 5px solid #ffffff;
+            font-weight: bold;
+            font-size: 26px;
+            width: 320px;
+            text-align: center;
+            box-sizing: border-box;
+            transition: transform 0.1s ease;
+            margin-bottom: 10px;
+        }
+
+        .finishScreen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 4rem;
+            text-transform: uppercase;
+            color: #FFDE59;
+            padding: 0;
+            margin: 0 0 30px 0;
+            text-shadow: 
+                1px 1px 0px #FF914D,
+                2px 2px 0px #FF914D,
+                3px 3px 0px #FF914D,
+                4px 4px 0px #FF914D,
+                5px 5px 0px #FF914D;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .skin-image {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 20%;
+            border: 5px solid white;
+        }
+
+
+       .classicSkin {
+            background-color: transparent; /* Entfernt den hellen Standard-Button-Hintergrund */
+            background-image: url('spielerSkin.png');
+            width: 100px;
+            height: 100px;
+            
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            border: 4px solid white;
+            border-radius: 20%;
+            box-sizing: border-box; /* Verhindert, dass der Rahmen die 100px Größe vergrößert */
+            outline: none; /* Entfernt den Fokus-Rahmen beim Anklicken */
+        } 
+
+        .greenSkin {
+            background-color: transparent; /* Entfernt den hellen Standard-Button-Hintergrund */
+            background-image: url("greenSkin.png");
+            width: 100px;
+            height: 100px;
+            
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: pointer;
+            border: 4px solid white;
+            border-radius: 20%;
+            box-sizing: border-box; /* Verhindert, dass der Rahmen die 100px Größe vergrößert */
+            outline: none; /* Entfernt den Fokus-Rahmen beim Anklicken */
+        }
+
+        .classicSkin .skin-image .greenSkin {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .greenSkin:hover, .classicSkin:hover, .BackButton:hover {
+            transform: scale(1.1);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .active-skin {
+    transform: scale(1.15); /* Dauerhaft größer */
+    border-color: black !important; /* Optional: Gelber Rahmen für den aktiven Skin */
+    box-shadow: 0 0 15px black; /* Optional: Leuchteffekt */
+}
+    </style>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">  
+</head>
+<body>
+
+    <h1 class="color-cube-text" id="mainTitle">Cube Run</h1>
+
+    <div class="startScren" id="startScren">
+        <button class="startGamme">Start Game</button>
+        <div class="optionsStart">
+            <button class="settingButton" id="openSettingsBtn">Settings</button>
+            <button class="settingButton" id="openSkinsBtn">Skins</button>
+        </div>
+        <div>
+            <input type="checkbox" id="devModeCheckbox">
+            <label for="devModeCheckbox">Dev Mode</label>
+            <div id="devModeControls" style="display: none;">
+                <input type="number" id="devSpeed" placeholder="Speed standard: 160" value="300">
+                <label for="devSpeed">Speed</label>
+                <input type="checkbox" id="devFly">
+                <label for="devFly">Fly</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="gameContainer" id="gameContainer">
+        <button id="BackButton" class="BackButton">Back</button>
+        <div class="spieler" id="spieler"></div>
+        <div id="coinCountContainer">
+            Coins: <span id="coinCount">0</span>
+        </div>
+    </div>
+
+    <div class="settinContainer" id="settingContainer">
+        <button class="BackButton" id="BackButton2">Back</button>
+        <div class="settings-content">
+            <label for="lautstärke">volume</label>
+            <input type="range" id="lautstärke" name="lautstärke" min="0" max="1" step="0.01" value="0.5">
+        </div>
+    </div>
+
+    <div class="skinContainer" id="skinContainer">
+        <button class="BackButton" id="BackButton3">Back</button>
+        <div class="skins-content">
+             <button class="greenSkin" id="greenSkin"></button>
+             <button class="classicSkin" id="classicSkin"></button>
+        </div>
+    </div>
+
+    <div class="gameOverScreen" id="gameOverScreen">
+        <h1>Game Over</h1>
+        <button id="restartButton" class="restartButton">Restart</button>
+        <button id="deathHomeButton" class="deathHomeButton">Home</button>
+    </div>
+
+    <div class="finishScreen" id="finishScreen">
+        <h1>Level Completed!</h1>
+        <button id="finishRestartButton" class="restartButton">Restart</button>
+        <button id="finishHomeButton" class="finishHomeButton">Home</button>
+        
+    </div>
+
+    <div id='levelSelectScreen' style='display:none;'>
+        <h1>Level Select</h1>
+        <button id='level1Button'>Level 1</button>
+        <button id='level2Button'>Level 2</button>
+        <button id='level3Button'>Level 3</button>
+        <button id='BackButton4'>Back</button>
+    </div>
+
+    <audio id="bg-music" preload="auto"></audio>   
+
+    <script>
+       let selectedSkin = localStorage.getItem('selectedSkin');
+if (selectedSkin === null) {
+    selectedSkin = 'classic'; // Standard-Skin
+    localStorage.setItem('selectedSkin', selectedSkin);
+}
+
+// UI direkt beim Laden aktualisieren, sobald das DOM bereit ist (oder am Ende des Skripts aufrufen):
+window.addEventListener('DOMContentLoaded', () => {
+    updateSkinUI();
+});
+        const startScren = document.getElementById('startScren');
+        const startGameButton = document.querySelector('.startGamme');
+        const Backbutton = document.getElementById("BackButton");
+        const gameContainer = document.getElementById('gameContainer');
+        const settingContainerBackButton = document.getElementById('BackButton2');
+        const settingContainer = document.getElementById('settingContainer');
+        const settingsButton = document.getElementById('openSettingsBtn');
+        const colorCubeText = document.getElementById('mainTitle');
+        const skinsButton = document.getElementById("openSkinsBtn");
+        const skinContainer = document.getElementById("skinContainer");
+        const skinContainerBackButton = document.getElementById("BackButton3");
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const resetButton = document.getElementById("restartButton");
+        const deathHomeButton = document.getElementById("deathHomeButton");
+        const devModeBtn = document.getElementById("devModeBtn");
+        const devModeCheckbox = document.getElementById('devModeCheckbox')
+        const devSpeedInput = document.getElementById('devSpeed');
+        const devModeControls = document.getElementById('devModeControls');
+        const devFly = document.getElementById('devFly');
+        const finishScreen = document.getElementById("finishScreen");
+        const finishRestartButton = document.getElementById("finishRestartButton");
+        const finishHomeButton = document.getElementById("finishHomeButton");
+        const classicSkin = document.getElementById("classicSkin");
+        const greenSkin = document.getElementById("greenSkin")
+        const levelSelectScreen = document.getElementById('levelSelectScreen');
+        const level1Button = document.getElementById('level1Button');
+        const level2Button = document.getElementById('level2Button');
+        const level3Button = document.getElementById('level3Button');
+        const BackButton4 = document.getElementById('BackButton4');
+        let speed = 160;
+        let devMode = false;
+        let player;
+        let cursors;
+        let platforms;
+        let coins;
+        let isGameOver = false;
+        let flag;
+        let keys;
+        let isFlying = false;
+        let isPaused = false;
+
+
+        const isMobile =
+            navigator.maxTouchPoints > 0 ||
+            window.matchMedia("(pointer: coarse)").matches;
+        
+
+    
+
+       classicSkin.addEventListener("click", () => {
+    console.log("Classic Skin ausgewählt");
+    selectedSkin = 'classic';
+    localStorage.setItem('selectedSkin', selectedSkin);
+    updateSkinUI(); // UI sofort aktualisieren
+});
+
+greenSkin.addEventListener("click", () => {
+    console.log("greenSkin button clicked!");
+    selectedSkin = 'green';
+    localStorage.setItem('selectedSkin', selectedSkin);
+    updateSkinUI(); // UI sofort aktualisieren
+});
+
+
+
+        function updateSkinUI() {
+    // Erstmal bei beiden Buttons die aktive Klasse entfernen
+    classicSkin.classList.remove('active-skin');
+    greenSkin.classList.remove('active-skin');
+
+    // Je nach ausgewähltem Skin die Klasse dem passenden Button hinzufügen
+    if (selectedSkin === 'classic') {
+        classicSkin.classList.add('active-skin');
+    } else if (selectedSkin === 'green') {
+        greenSkin.classList.add('active-skin');
+    }
+}
+
+        
+                                                                                                                                                                                                                                                                                                                                                                                                                
+
+         
+        const regler = document.getElementById("lautstärke");
+        const audioPlayer = document.getElementById("bg-music");
+
+        const playlist = [
+            "hinterfgrund.mp3",
+            "Song2.mp3",
+            "Song3.mp3",
+            "Song4.mp3",
+            "Song5.mp3"
+        ];
+
+        // Lautstärke laden
+        const gespeicherteLautstaerke = localStorage.getItem('spielLautstaerke');
+        if (gespeicherteLautstaerke !== null) {
+            const vol = parseFloat(gespeicherteLautstaerke);
+            audioPlayer.volume = vol;
+            regler.value = vol;
+        } else {
+            audioPlayer.volume = 0.5;
+            regler.value = 0.5;
+        }
+
+        // Event-Listener Navigation
+        startGameButton.addEventListener('click', () => {
+            startScren.style.display = 'none';
+            colorCubeText.style.display = 'none';
+            levelSelectScreen.style.display = 'flex';
+        });
+
+        BackButton4.addEventListener('click', () => {
+            startScren.style.display = 'flex';
+            colorCubeText.style.display = 'block';
+            levelSelectScreen.style.display = 'none';
+        });
+
+        level1Button.addEventListener('click', () => {
+            startScren.style.display = 'none';
+            colorCubeText.style.display = 'none';
+            levelSelectScreen.style.display = 'none';
+            gameContainer.classList.add('aktiv');
+        });
+
+        Backbutton.addEventListener('click', () => {
+            startScren.style.display = 'flex';
+            colorCubeText.style.display = 'block';
+            gameContainer.classList.remove('aktiv');
+        });
+
+        settingsButton.addEventListener("click", () => {
+            startScren.style.display = 'none';
+            colorCubeText.style.display = 'none';
+            settingContainer.style.display = 'flex';
+        });
+
+        settingContainerBackButton.addEventListener("click", () => {
+            startScren.style.display = 'flex';
+            colorCubeText.style.display = 'block';
+            settingContainer.style.display = 'none';
+        });
+
+        skinsButton.addEventListener("click", () => {
+            startScren.style.display = 'none';
+            colorCubeText.style.display = 'none';
+            skinContainer.style.display = 'flex';
+        });
+
+
+        skinContainerBackButton.addEventListener("click", () => {
+            startScren.style.display = "flex";
+            colorCubeText.style.display = "block";
+            skinContainer.style.display = "none";
+        });
+
+        resetButton.addEventListener("click", () => {
+            gameOverScreen.style.display = "none";
+            startScren.style.display = "flex";
+            colorCubeText.style.display = "none"
+            levelSelectScreen.style.display = "none";
+            const currentScene = game.scene.scenes[0];
+            if (currentScene) {
+                resetGame(currentScene);
+            }   
+        });
+
+        finishRestartButton.addEventListener("click", () => {
+    finishScreen.style.display = "none";
+    gameOverScreen.style.display = "none";
+    startScren.style.display = "none";       // WICHTIG: Startscreen versteckt lassen!
+    colorCubeText.style.display = "none";    // Titel verstecken
+    levelSelectScreen.style.display = "none";
+    
+    // Spielcontainer wieder aktiv schalten, damit man die Canvas sieht
+    gameContainer.classList.add('aktiv');
+
+    const currentScene = game.scene.scenes[0];
+    if (currentScene) {
+        resetGame(currentScene);
+    }  
+});
+
+        deathHomeButton.addEventListener("click", () => {
+    gameOverScreen.style.display = "none";
+    startScren.style.display = "flex";
+    colorCubeText.style.display = "block";
+    levelSelectScreen.style.display = "none";
+    
+    // Richtige Klasse zum Verstecken des Spielcontainers verwenden:
+    gameContainer.classList.remove('aktiv');
+
+    const currentScene = game.scene.scenes[0];
+    if (currentScene) {
+        resetGame(currentScene);
+    }   
+});
+
+     finishHomeButton.addEventListener("click", () => {
+        gameOverScreen.style.display = "none";
+        finishScreen.style.display = "none";
+        startScren.style.display = "flex";
+        colorCubeText.style.display = "block";
+        levelSelectScreen.style.display = "none";
+    
+    // Richtige Klasse zum Verstecken des Spielcontainers verwenden:
+    gameContainer.classList.remove('aktiv');
+
+    const currentScene = game.scene.scenes[0];
+    if (currentScene) {
+        resetGame(currentScene);
+    }   
+});
+
+        devModeCheckbox.addEventListener("change", (e) => {
+        devMode = e.target.checked;
+        if (devMode) {
+            devModeControls.style.display = "block";
+            const speedValue = parseFloat(devSpeedInput.value);
+            if (!isNaN(speedValue)) {
+                speed = speedValue;
+            }
+        } else {
+            devModeControls.style.display = "none";
+            speed = 160;
+        }
+        });
+
+        devSpeedInput.addEventListener("input", (e) => {
+            const speedValue = parseFloat(e.target.value);
+             if (!isNaN(speedValue) && devMode) {
+                speed = speedValue;
+            }
+        });
+
+        devFly.addEventListener("change", (e) => {
+            isFlying = e.target.checked;
+            if (player && player.body) {
+                player.body.allowGravity = !(devMode && isFlying);
+            }
+        });
+            
+
+        // Musik-Funktionen
+        function setupNextSong() {
+            const randomIndex = Math.floor(Math.random() * playlist.length);
+            audioPlayer.src = playlist[randomIndex];
+            audioPlayer.volume = parseFloat(regler.value);
+        }
+
+        function playMusic() {
+            if (!audioPlayer.src) {
+                setupNextSong();
+            }
+            audioPlayer.play().catch(e => console.log("Autoplay blockiert:", e));
+        }
+
+        // Song wechseln, sobald einer endet
+        audioPlayer.addEventListener("ended", () => {
+            setupNextSong();
+            audioPlayer.play();
+        });
+
+        // Musik startet beim ersten Klick irgendwo auf der Seite
+        window.addEventListener("click", () => {
+            playMusic();
+        }, { once: true });
+
+        // Lautstärke-Regler
+        regler.addEventListener("input", (event) => {
+            const aktuellerWert = event.target.value;
+            audioPlayer.volume = parseFloat(aktuellerWert);
+            localStorage.setItem('spielLautstaerke', aktuellerWert);
+        });
+
+        let coinsP = 0;
+
+        function collectCoin(player, coins) {
+            coins.disableBody(true, true);
+            coinsP++;
+            document.getElementById('coinCount').textContent = coinsP;
+        };
+
+        // Phaser Konfiguration
+        const config = {
+            type: Phaser.AUTO,
+            parent: 'gameContainer',
+            input: {
+                activePointers: 4
+            },
+            scale: {
+                mode: Phaser.Scale.RESIZE,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+            },
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 500 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update,
+            }
+        };
+
+        function preload() {
+            this.load.image('spielerTex', 'spielerSkin.png');
+
+            this.load.image('platform', 'Platform.png');
+
+            this.load.image('background', 'background.png');
+
+            this.load.image('coin', 'coin.png');
+
+            this.load.image('flag', 'flag.png');
+
+            this.load.image('buttonLeft', 'right.png');
+
+            this.load.image('buttonRight', 'left.png');
+
+            this.load.image('buttonJump', 'jump.png')
+
+        };
+
+
+        function create() {
+
+            const gameWidth = this.scale.width;
+            const gameHeight = this.scale.height;
+
+            const worldWidth = 2050;
+            const worldHeight = gameHeight;
+
+            this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+
+            let background = this.add.image(0, 0, 'background').setOrigin(0, 0);
+            background.setDisplaySize(worldWidth, worldHeight);
+
+            this.physics.world.setBoundsCollision(true, true, true, false);
+
+            
+
+            // 1. Plattform-Gruppe erstellen
+            platforms = this.physics.add.staticGroup();
+
+            // 2. Einzelne Plattform erstellen, skalieren und Hitbox aktualisieren (.refreshBody())
+            const platform1 = platforms.create(150, 400, 'platform');
+            platform1.setScale(0.2); // Anpassen je nach Bildgröße
+            platform1.refreshBody(); // WICHTIG bei statischen Objekten nach dem Skalieren!
+
+            const platform2 = platforms.create(400, 500, 'platform');
+            platform2.setScale(0.2);
+            platform2.refreshBody();
+
+            const platform3 = platforms.create(700, 500, 'platform');
+            platform3.setScale(0.2);
+            platform3.refreshBody();
+
+            const platform4 = platforms.create(1000, 400, 'platform');
+            platform4.setScale(0.2);
+            platform4.refreshBody();
+
+            const platform5 = platforms.create(1300, 300, 'platform');
+            platform5.setScale(0.2);
+            platform5.refreshBody();
+
+            const platform6 = platforms.create(1600, 400, 'platform');
+            platform6.setScale(0.2);
+            platform6.refreshBody();
+
+            const platform7 = platforms.create(1900, 500, 'platform');
+            platform7.setScale(0.2);
+            platform7.refreshBody();
+
+            flag = this.physics.add.sprite(1900, 400, 'flag');
+            flag.setScale(0.2);
+            flag.body.setAllowGravity(false);
+
+            coins = this.physics.add.staticGroup();
+
+            // Münzen hinzufügen
+            const coin1 = coins.create(400, 450, 'coin');
+            coin1.setScale(0.1);
+            coin1.refreshBody();
+
+            const coin2 = coins.create(700, 450, 'coin');
+            coin2.setScale(0.1);
+            coin2.refreshBody();
+
+            const coin3 = coins.create(1000, 350, 'coin');
+            coin3.setScale(0.1);
+            coin3.refreshBody();
+
+            player = this.physics.add.sprite(100, 10, 'spielerTex');
+            player.setCollideWorldBounds(true);
+            player.setScale(0.05);
+            player.body.updateFromGameObject();
+            player.health = 100;
+
+            // Nach player = this.physics.add.sprite(...)
+            if (devMode && isFlying) {
+                player.body.allowGravity = false;
+            }
+            
+        
+
+            // Kollision zwischen Spieler und Plattformen
+            this.physics.add.collider(player, platforms);
+
+            this.physics.add.collider(player, flag, () => {
+                console.log("Level abgeschlossen!");
+                startScren.style.display = 'flex';
+                colorCubeText.style.display = 'block';
+                gameContainer.classList.remove('aktiv');
+                this.scene.restart();
+                finishScreen.style.display = 'block';
+            });
+
+            // Kollision zwischen Spieler und Münzen
+            this.physics.add.overlap(player, coins, collectCoin, null, this);
+
+            //kolision zwischen Coin und Plattformen
+            this.physics.add.collider(coins, platforms);
+
+            this.physics.add.overlap(player, coins);
+
+            cursors = this.input.keyboard.createCursorKeys();
+
+
+            this.moveLeft = false;
+            this.moveRight = false;
+            this.jump = false;
+
+            if (isMobile) {
+
+            const buttonLeft = this.add.image(1, 500, 'buttonLeft').setOrigin(0, 0).setScrollFactor(0).setScale(2).setInteractive();
+
+            buttonLeft.on('pointerdown', () => {
+                this.moveLeft = true;
+            });
+            buttonLeft.on('pointerup', () => {
+                this.moveLeft = false;
+            });
+
+            const buttonRight = this.add.image(200, 500, 'buttonRight').setOrigin(0, 0).setScrollFactor(0).setScale(2).setInteractive();
+
+            buttonRight.on('pointerdown', () => {
+                this.moveRight = true;
+            });
+            buttonRight.on('pointerup', () => {
+            
+                this.moveRight = false;
+            });
+            buttonRight.on("pointerout", () => {            
+                this.moveRight = false;
+            })
+
+            const buttonJump = this.add.image(900, 500, 'buttonJump').setOrigin(0, 0).setScrollFactor(0).setScale(2).setInteractive();
+
+            buttonJump.on('pointerdown', () => {
+            
+                this.jump = true;
+            });
+            buttonJump.on('pointerup', () => {
+            
+                this.jump = false;
+            });
+            buttonJump.on("pointerout", () => {
+                this.jump = false;
+            })
+
+             console.log("Mobile");
+            
+            } else {
+                console.log("Desktop");
+            }
+
+
+
+
+
+            keys = this.input.keyboard.addKeys('W,A,S,D,space');
+
+            this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+            this.cameras.main.startFollow(player);
+
+
+
+
+        };
+
+
+
+        function update() {
+
+            if (isGameOver == true) {
+                return;
+            };
+
+            if (keys.A.isDown || this.moveLeft) {
+                player.setVelocityX(-speed);
+                player.flipX = true;
+            } else if (keys.D.isDown || this.moveRight) {
+                player.setVelocityX(speed);
+                player.flipX = false;
+            } else {
+                player.setVelocityX(0);
+            };
+
+            // Vertikalsteuerung (Springen vs. Fliegen)
+            if (devMode && isFlying) {
+                // Schwerkraft im Fly-Mode ausschalten
+                player.body.allowGravity = false;
+
+                if (keys.W.isDown || keys.space.isDown || this.jump) {
+                    player.setVelocityY(-speed); // Nach oben fliegen
+                } else if (keys.S.isDown) {
+                    player.setVelocityY(speed);  // Nach unten fliegen
+                } else {
+                    player.setVelocityY(0);       // In der Luft schweben bleiben
+                }
+            } else {
+                // Normaler Modus mit Schwerkraft
+                player.body.allowGravity = true;
+
+                if ((keys.space.isDown || keys.W.isDown || this.jump) && player.body.touching.down) {
+                    player.setVelocityY(-330);
+                }
+            }
+
+            if (player.y > 720) {
+                gameOver(this);
+            };
+
+
+
+        };
+
+        function gameOver(scene) {
+
+            isGameOver = true;
+
+            scene.physics.pause();
+            player.setTint(0xff0000);
+
+            gameOverScreen.style.display = 'flex';
+        };
+
+        function resetGame(scene) {
+            
+
+            isGameOver = false;
+            console.log("Game reset");
+            player.clearTint();
+            player.setPosition(100, 300);
+            player.setVelocity(0, 0);
+            scene.physics.resume();
+            scene.scene.restart();
+            coins.enableBody(true, true)
+
+        };
+
+        if (window.innerWidth < 800) {
+            alert("Bitte benutze einen größeren Bildschirm für ein besseres Spielerlebnis.");
+        };       
+
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>
+
